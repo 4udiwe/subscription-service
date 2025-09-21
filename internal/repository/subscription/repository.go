@@ -1,0 +1,159 @@
+package subscription_repo
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/4udiwe/subscription-serivce/internal/entity"
+	"github.com/4udiwe/subscription-serivce/pkg/postgres"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+)
+
+type Repository struct {
+	*postgres.Postgres
+}
+
+func New(postgres *postgres.Postgres) *Repository {
+	return &Repository{postgres}
+}
+
+func (r *Repository) Create(ctx context.Context, userID, offerID uuid.UUID, startDate, endDate time.Time) (entity.Subscription, error) {
+	logrus.Infof("SubscriptionRepository.Create called: userID=%s, offerID=%s", userID, offerID)
+	query, args, _ := r.Builder.
+		Insert("subscription").
+		Columns("user_id", "offer_id", "start_date", "end_date").
+		Values(userID, offerID, startDate, endDate).
+		Suffix("RETURNING id, created_at, updated_at").
+		ToSql()
+
+	sub := entity.Subscription{
+		UserID:    userID,
+		OfferID:   offerID,
+		StartDate: startDate,
+		EndDate:   endDate,
+	}
+	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
+		&sub.ID, &sub.CreatedAt, &sub.UpddatedAt,
+	)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.Create error: ", err)
+		return entity.Subscription{}, fmt.Errorf("SubscriptionRepository.Create - failed to create subscription: %w", err)
+	}
+	logrus.Infof("SubscriptionRepository.Create success: id=%s", sub.ID)
+	return sub, nil
+}
+
+func (r *Repository) GetAll(ctx context.Context) ([]entity.Subscription, error) {
+	logrus.Info("SubscriptionRepository.GetAll called")
+	query, args, _ := r.Builder.
+		Select("id", "user_id", "offer_id", "start_date", "end_date", "created_at", "updated_at").
+		From("subscription").
+		ToSql()
+
+	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.GetAll error: ", err)
+		return nil, fmt.Errorf("SubscriptionRepository.GetAll - failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subs []entity.Subscription
+	for rows.Next() {
+		var sub entity.Subscription
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt); err != nil {
+			logrus.Error("SubscriptionRepository.GetAll scan error: ", err)
+			return nil, fmt.Errorf("SubscriptionRepository.GetAll - scan error: %w", err)
+		}
+		subs = append(subs, sub)
+	}
+	logrus.Infof("SubscriptionRepository.GetAll success: count=%d", len(subs))
+	return subs, nil
+}
+
+func (r *Repository) GetById(ctx context.Context, id uuid.UUID) (entity.Subscription, error) {
+	logrus.Infof("SubscriptionRepository.GetById called: id=%s", id)
+	query, args, _ := r.Builder.
+		Select("id", "user_id", "offer_id", "start_date", "end_date", "created_at", "updated_at").
+		From("subscription").
+		Where("id = ?", id).
+		ToSql()
+
+	var sub entity.Subscription
+	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
+		&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt,
+	)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.GetById error: ", err)
+		return entity.Subscription{}, ErrSubscriptionNotFound
+	}
+	logrus.Infof("SubscriptionRepository.GetById success: id=%s", sub.ID)
+	return sub, nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
+	logrus.Infof("SubscriptionRepository.Delete called: id=%s", id)
+	query, args, _ := r.Builder.
+		Delete("subscription").
+		Where("id = ?", id).
+		ToSql()
+
+	result, err := r.GetTxManager(ctx).Exec(ctx, query, args...)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.Delete error: ", err)
+		return fmt.Errorf("SubscriptionRepository.Delete - failed to delete subscription: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		logrus.Error("SubscriptionRepository.Delete error: no subscription found with id=", id)
+		return ErrSubscriptionNotFound
+	}
+	logrus.Infof("SubscriptionRepository.Delete success: id=%s", id)
+	return nil
+}
+
+func (r *Repository) GetAllByUserIDAndSubscriptionName(
+	ctx context.Context,
+	userID uuid.UUID,
+	subscriptionName string,
+	startPeriod *time.Time,
+	endPeriod *time.Time,
+) ([]entity.Subscription, error) {
+	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startDate=%v, endDate=%v", userID, subscriptionName, startPeriod, endPeriod)
+
+	builder := r.Builder.
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at").
+		From("subscription s").
+		Join("offer o ON s.offer_id = o.id").
+		Where("s.user_id = ?", userID).
+		Where("o.name = ?", subscriptionName)
+
+	if startPeriod != nil {
+		builder = builder.Where("s.start_date >= ?", *startPeriod)
+	}
+	if endPeriod != nil {
+		builder = builder.Where("s.start_date <= ?", *endPeriod)
+	}
+
+	query, args, _ := builder.ToSql()
+
+	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName error: ", err)
+		return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subs []entity.Subscription
+	for rows.Next() {
+		var sub entity.Subscription
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt); err != nil {
+			logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName scan error: ", err)
+			return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - scan error: %w", err)
+		}
+		subs = append(subs, sub)
+	}
+	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName success: count=%d", len(subs))
+	return subs, nil
+}

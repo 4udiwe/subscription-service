@@ -23,6 +23,15 @@ type Response struct {
 	Offers []entity.Offer `json:"offers"`
 }
 
+// Get all offers
+// @Summary Получение всех офферов
+// @Description Получение списка всех офферов
+// @Tags offers
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response
+// @Failure 500 {string} ErrorResponse
+// @Router /offers [get]
 func (h *handler) Handle(c echo.Context, in Request) error {
 	offers, err := h.s.GetAllOffers(c.Request().Context())
 	if err != nil {

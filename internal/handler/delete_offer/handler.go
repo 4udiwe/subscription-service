@@ -1,4 +1,4 @@
-package delete_sub
+package delete_offer
 
 import (
 	"errors"
@@ -12,32 +12,32 @@ import (
 )
 
 type handler struct {
-	s SubscriptionService
+	s OfferService
 }
 
-func New(s SubscriptionService) h.Handler {
+func New(s OfferService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
 type Request struct {
-	SubscriptionID uuid.UUID `json:"subscription_id" validate:"required,uuid"`
+	OfferID uuid.UUID `json:"offer_id" validate:"required,uuid"`
 }
 
-// Delete subscription
-// @Summary Удаление подписки
-// @Description Удаление подписки по ID. Не удаляет предложение, на которое была оформлена подписка.
-// @Tags subscriptions
+// Delete offer
+// @Summary Удаление предложения
+// @Description Удаление предложения по ID. Если есть активные подписки на это предложение, оно не будет удалено.
+// @Tags offers
 // @Accept json
-// @Param subscription body Request true "subscription to delete"
+// @Param offer body Request true "offer to delete"
 // @Success 202 {string} string "No Content"
 // @Failure 404 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
-// @Router /subscriptions [delete]
+// @Router /offers [delete]
 func (h *handler) Handle(c echo.Context, in Request) error {
-	err := h.s.DeleteSubscription(c.Request().Context(), in.SubscriptionID)
+	err := h.s.DeleteOffer(c.Request().Context(), in.OfferID)
 
 	if err != nil {
-		if errors.Is(err, subscription.ErrSubscriptionNotFound) {
+		if errors.Is(err, subscription.ErrOfferNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

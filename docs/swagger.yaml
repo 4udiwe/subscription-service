@@ -1,0 +1,469 @@
+basePath: /
+definitions:
+  delete_offer.Request:
+    properties:
+      offer_id:
+        type: string
+    required:
+    - offer_id
+    type: object
+  github_com_4udiwe_subscription-service_internal_entity.Offer:
+    properties:
+      createdAt:
+        type: string
+      durationMonths:
+        type: integer
+      id:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  internal_handler_delete_sub.Request:
+    properties:
+      subscription_id:
+        type: string
+    required:
+    - subscription_id
+    type: object
+  internal_handler_get_offers.Response:
+    properties:
+      offers:
+        items:
+          $ref: '#/definitions/github_com_4udiwe_subscription-service_internal_entity.Offer'
+        type: array
+    type: object
+  internal_handler_get_subs.Response:
+    properties:
+      subscriptions:
+        items:
+          $ref: '#/definitions/internal_handler_get_subs.Subscription'
+        type: array
+    type: object
+  internal_handler_get_subs.Subscription:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      price:
+        type: integer
+      start_date:
+        type: string
+      subscription_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_handler_get_subs_by_user.Request:
+    properties:
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  internal_handler_get_subs_by_user.Response:
+    properties:
+      subscriptions:
+        items:
+          $ref: '#/definitions/internal_handler_get_subs_by_user.Subscription'
+        type: array
+    type: object
+  internal_handler_get_subs_by_user.Subscription:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      price:
+        type: integer
+      start_date:
+        type: string
+      subscription_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_handler_get_subs_by_user_subname.Request:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    required:
+    - offer_name
+    - user_id
+    type: object
+  internal_handler_get_subs_by_user_subname.Response:
+    properties:
+      subscriptions:
+        items:
+          $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Subscription'
+        type: array
+      total_price:
+        type: integer
+    type: object
+  internal_handler_get_subs_by_user_subname.Subscription:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      price:
+        type: integer
+      start_date:
+        type: string
+      subscription_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_handler_post_sub_by_name.Request:
+    properties:
+      end_date:
+        type: string
+      price:
+        minimum: 0
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    required:
+    - price
+    - service_name
+    - start_date
+    - user_id
+    type: object
+  internal_handler_post_sub_by_name.Response:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      price:
+        type: integer
+      start_date:
+        type: string
+      subscription_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_handler_post_sub_by_offer_id.Request:
+    properties:
+      offer_id:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    required:
+    - offer_id
+    - start_date
+    - user_id
+    type: object
+  internal_handler_post_sub_by_offer_id.Response:
+    properties:
+      end_date:
+        type: string
+      offer_name:
+        type: string
+      price:
+        type: integer
+      start_date:
+        type: string
+      subscription_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  post_offer.Request:
+    properties:
+      duration_months:
+        minimum: 1
+        type: integer
+      price:
+        minimum: 0
+        type: integer
+      service_name:
+        type: string
+    required:
+    - duration_months
+    - price
+    - service_name
+    type: object
+  post_offer.Response:
+    properties:
+      created_at:
+        type: string
+      duration_months:
+        type: integer
+      offer_id:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: sharifkulov.work@gmail.com
+  description: Сервис для агрегации онлайн-подписок (тестовое задание).
+  title: Subscriptions Service
+  version: "1.0"
+paths:
+  /offers:
+    delete:
+      consumes:
+      - application/json
+      description: Удаление предложения по ID. Если есть активные подписки на это
+        предложение, оно не будет удалено.
+      parameters:
+      - description: offer to delete
+        in: body
+        name: offer
+        required: true
+        schema:
+          $ref: '#/definitions/delete_offer.Request'
+      responses:
+        "202":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Удаление предложения
+      tags:
+      - offers
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех офферов
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler_get_offers.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Получение всех офферов
+      tags:
+      - offers
+    post:
+      consumes:
+      - application/json
+      description: Создание нового предложения с указанными параметрами
+      parameters:
+      - description: Offer details
+        in: body
+        name: offer
+        required: true
+        schema:
+          $ref: '#/definitions/post_offer.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/post_offer.Response'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Создание нового предложения
+      tags:
+      - offers
+  /subscriptions:
+    delete:
+      consumes:
+      - application/json
+      description: Удаление подписки по ID. Не удаляет предложение, на которое была
+        оформлена подписка.
+      parameters:
+      - description: subscription to delete
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler_delete_sub.Request'
+      responses:
+        "202":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Удаление подписки
+      tags:
+      - subscriptions
+    get:
+      consumes:
+      - application/json
+      description: Получение списка всех подписок
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler_get_subs.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Получение всех подписок
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Создание новой подписки для пользователя с возможностью создания
+        нового предложения, если оно не существует
+      parameters:
+      - description: subscription info
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler_post_sub_by_name.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler_post_sub_by_name.Response'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Создание новой подписки
+      tags:
+      - subscriptions
+  /subscriptions/by-offer:
+    post:
+      consumes:
+      - application/json
+      description: Создание новой подписки для пользователя по ID предложения, полученного
+        из ендпоинта всех предложений
+      parameters:
+      - description: subscription info
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler_post_sub_by_offer_id.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler_post_sub_by_offer_id.Response'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Создание новой подписки по ID предложения
+      tags:
+      - subscriptions
+  /subscriptions/by-user:
+    post:
+      consumes:
+      - application/json
+      description: Получение списка подписок для указанного пользователя
+      parameters:
+      - description: user ID
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler_get_subs_by_user.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler_get_subs_by_user.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Получение подписок по ID пользователя
+      tags:
+      - subscriptions
+  /subscriptions/by-user-and-subname:
+    post:
+      consumes:
+      - application/json
+      description: Получение списка подписок для указанного пользователя и названия
+        подписки с возможностью фильтрации по дате начала и окончания
+      parameters:
+      - description: user ID and subscription name
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Response'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Получение подписок по ID пользователя и названию подписки
+      tags:
+      - subscriptions
+schemes:
+- http
+swagger: "2.0"

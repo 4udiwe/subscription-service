@@ -34,6 +34,15 @@ type Subscription struct {
 	EndDate        string    `json:"end_date"`
 }
 
+// Get all subscriptions
+// @Summary Получение всех подписок
+// @Description Получение списка всех подписок
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Success 200 {object} Response
+// @Failure 500 {string} ErrorResponse
+// @Router /subscriptions [get]
 func (h *handler) Handle(c echo.Context, in Request) error {
 	sub, err := h.s.GetAllSubscriptions(c.Request().Context())
 

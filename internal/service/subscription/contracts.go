@@ -24,7 +24,7 @@ type SubscriptionRepository interface {
 }
 
 type OfferRepository interface {
-	Create(ctx context.Context, name string, price int, durationMonth int) (entity.Offer, error)
+	Create(ctx context.Context, name string, price int, durationMonths int) (entity.Offer, error)
 	GetByID(ctx context.Context, id uuid.UUID) (entity.Offer, error)
 	GetByNameAndPrice(ctx context.Context, name string, price int) (entity.Offer, error)
 }

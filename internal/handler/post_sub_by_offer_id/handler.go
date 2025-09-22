@@ -33,6 +33,17 @@ type Response struct {
 	EndDate        string    `json:"end_date"`
 }
 
+// Create a new subscription by offer ID
+// @Summary Создание новой подписки по ID предложения
+// @Description Создание новой подписки для пользователя по ID предложения, полученного из ендпоинта всех предложений
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param subscription body Request true "subscription info"
+// @Success 201 {object} Response
+// @Failure 400 {string} ErrorResponse
+// @Failure 500 {string} ErrorResponse
+// @Router /subscriptions/by-offer [post]
 func (h *handler) Handle(c echo.Context, in Request) error {
 	startDate, err := time.Parse("2006-01-02", in.StartDate)
 	if err != nil {
@@ -45,7 +56,7 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, Response{
+	return c.JSON(http.StatusCreated, Response{
 		SubscriptionID: sub.ID,
 		UserID:         sub.UserID,
 		OfferName:      sub.OfferName,

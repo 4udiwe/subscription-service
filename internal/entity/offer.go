@@ -7,10 +7,10 @@ import (
 )
 
 type Offer struct {
-	ID            uuid.UUID `db:"id"`
-	Name          string    `db:"name"`
-	Price         int       `db:"price"`
-	DurationMonth int       `db:"duration_month"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	ID             uuid.UUID `db:"id"`
+	Name           string    `db:"name"`
+	Price          int       `db:"price"`
+	DurationMonths int       `db:"duration_months"`
+	CreatedAt      time.Time `db:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at"`
 }

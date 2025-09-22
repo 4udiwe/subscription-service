@@ -25,6 +25,22 @@ func New(offerRepository OfferRepository, subRepository SubscriptionRepository, 
 	}
 }
 
+func (s *OfferService) CreateOffer(ctx context.Context, name string, price int, durationMonths int) (entity.Offer, error) {
+	logrus.Infof("OfferService.CreateOffer called: name=%s, price=%d, durationMonths=%d", name, price, durationMonths)
+
+	offer, err := s.offerRepository.Create(ctx, name, price, durationMonths)
+	if err != nil {
+		if errors.Is(err, offer_repo.ErrOfferWithNameAndPriceAlreadyExists) {
+			return entity.Offer{}, ErrOfferWithNameAndPriceAlreadyExists
+		}
+		logrus.Errorf("OfferService.CreateOffer error: %v", err)
+		return entity.Offer{}, err
+	}
+
+	logrus.Infof("OfferService.CreateOffer success: offer created with ID=%d", offer.ID)
+	return offer, nil
+}
+
 func (s *OfferService) GetAllOffers(ctx context.Context) ([]entity.Offer, error) {
 	logrus.Info("OfferService.GetAllOffers called")
 

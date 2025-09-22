@@ -41,6 +41,17 @@ type Subscription struct {
 	EndDate        string    `json:"end_date"`
 }
 
+// Get all subscriptions by user ID and subscription name
+// @Summary Получение подписок по ID пользователя и названию подписки
+// @Description Получение списка подписок для указанного пользователя и названия подписки с возможностью фильтрации по дате начала и окончания
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param user body Request true "user ID and subscription name"
+// @Success 200 {object} Response
+// @Failure 400 {string} ErrorResponse
+// @Failure 500 {string} ErrorResponse
+// @Router /subscriptions/by-user-and-subname [post]
 func (h *handler) Handle(c echo.Context, in Request) error {
 	var startDate, endDate *time.Time
 

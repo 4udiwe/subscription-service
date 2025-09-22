@@ -44,12 +44,12 @@ func (s *SubscriptionService) CreateSubscription(
 		if err != nil {
 			if errors.Is(err, offer_repo.ErrOfferNotFound) {
 				// if not -> create it
-				durationMonth := 1
+				durationMonths := 1
 				if endDate != nil {
-					durationMonth = int(endDate.Sub(startDate).Hours() / (24 * 30))
+					durationMonths = int(endDate.Sub(startDate).Hours() / (24 * 30))
 				}
 
-				offer, err = s.offerRepository.Create(ctx, serviceName, price, durationMonth)
+				offer, err = s.offerRepository.Create(ctx, serviceName, price, durationMonths)
 				if err != nil {
 					logrus.Errorf("SubscriptionService.CreateSubscription error creating offer: %v", err)
 					return err
@@ -59,7 +59,7 @@ func (s *SubscriptionService) CreateSubscription(
 			}
 		}
 		// create subscription
-		sub.Subscription, err = s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonth, 0))
+		sub.Subscription, err = s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonths, 0))
 		sub.OfferName = offer.Name
 		sub.Price = offer.Price
 
@@ -89,7 +89,7 @@ func (s *SubscriptionService) CreateSubscriptionByOfferID(ctx context.Context, u
 		return entity.SubscriptionFullInfo{}, err
 	}
 
-	sub, err := s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonth, 0))
+	sub, err := s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonths, 0))
 	if err != nil {
 		logrus.Errorf("SubscriptionService.CreateSubscriptionByOfferID error creating subscription: %v", err)
 		return entity.SubscriptionFullInfo{}, err

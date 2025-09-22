@@ -21,20 +21,20 @@ func New(postgres *postgres.Postgres) *Repository {
 	return &Repository{postgres}
 }
 
-func (r *Repository) Create(ctx context.Context, name string, price int, durationMonth int) (entity.Offer, error) {
-	logrus.Infof("OfferRepository.Create called: name=%s, price=%d, durationMonth=%d", name, price, durationMonth)
+func (r *Repository) Create(ctx context.Context, name string, price int, durationMonths int) (entity.Offer, error) {
+	logrus.Infof("OfferRepository.Create called: name=%s, price=%d, durationMonths=%d", name, price, durationMonths)
 
 	query, args, _ := r.Builder.
 		Insert("offer").
 		Columns("name", "price", "duration_months").
-		Values(name, price, durationMonth).
+		Values(name, price, durationMonths).
 		Suffix("RETURNING id, created_at").
 		ToSql()
 
 	offer := entity.Offer{
-		Name:          name,
-		Price:         price,
-		DurationMonth: durationMonth,
+		Name:           name,
+		Price:          price,
+		DurationMonths: durationMonths,
 	}
 
 	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
@@ -69,7 +69,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]entity.Offer, error) {
 	var offers []entity.Offer
 	for rows.Next() {
 		var offer entity.Offer
-		if err := rows.Scan(&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonth, &offer.CreatedAt, &offer.UpdatedAt); err != nil {
+		if err := rows.Scan(&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonths, &offer.CreatedAt, &offer.UpdatedAt); err != nil {
 			logrus.Error("OfferRepository.GetAll scan error: ", err)
 			return nil, fmt.Errorf("OfferRepository.GetAll - scan error: %w", err)
 		}
@@ -91,7 +91,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (entity.Offer, e
 	var offer entity.Offer
 
 	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
-		&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonth, &offer.CreatedAt,
+		&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonths, &offer.CreatedAt,
 	)
 	if err != nil {
 		logrus.Error("OfferRepository.GetById error: ", err)
@@ -135,7 +135,7 @@ func (r *Repository) GetByNameAndPrice(ctx context.Context, name string, price i
 
 	var offer entity.Offer
 
-	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonth, &offer.CreatedAt, &offer.UpdatedAt)
+	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonths, &offer.CreatedAt, &offer.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return entity.Offer{}, ErrOfferNotFound

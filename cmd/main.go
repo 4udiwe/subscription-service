@@ -6,6 +6,17 @@ import (
 	"github.com/4udiwe/subscription-service/internal/app"
 )
 
+// @title Subscriptions Service
+// @version 1.0
+// @description Сервис для агрегации онлайн-подписок (тестовое задание).
+
+// @contact.email sharifkulov.work@gmail.com
+// @contact.telegram @arseniisharifkulov
+
+// @host localhost:8080
+// @BasePath /
+// @schemes http
+
 func main() {
 	app := app.New(os.Getenv("CONFIG_PATH"))
 	app.Start()

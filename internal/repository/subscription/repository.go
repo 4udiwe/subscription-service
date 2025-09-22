@@ -35,7 +35,7 @@ func (r *Repository) Create(ctx context.Context, userID, offerID uuid.UUID, star
 		EndDate:   endDate,
 	}
 	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
-		&sub.ID, &sub.CreatedAt, &sub.UpddatedAt,
+		&sub.ID, &sub.CreatedAt, &sub.UpdatedAt,
 	)
 	if err != nil {
 		logrus.Error("SubscriptionRepository.Create error: ", err)
@@ -62,7 +62,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]entity.Subscription, error) 
 	var subs []entity.Subscription
 	for rows.Next() {
 		var sub entity.Subscription
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt); err != nil {
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
 			logrus.Error("SubscriptionRepository.GetAll scan error: ", err)
 			return nil, fmt.Errorf("SubscriptionRepository.GetAll - scan error: %w", err)
 		}
@@ -82,7 +82,7 @@ func (r *Repository) GetById(ctx context.Context, id uuid.UUID) (entity.Subscrip
 
 	var sub entity.Subscription
 	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
-		&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt,
+		&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt,
 	)
 	if err != nil {
 		logrus.Error("SubscriptionRepository.GetById error: ", err)
@@ -148,12 +148,71 @@ func (r *Repository) GetAllByUserIDAndSubscriptionName(
 	var subs []entity.Subscription
 	for rows.Next() {
 		var sub entity.Subscription
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpddatedAt); err != nil {
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
 			logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName scan error: ", err)
 			return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - scan error: %w", err)
 		}
 		subs = append(subs, sub)
 	}
 	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName success: count=%d", len(subs))
+	return subs, nil
+}
+
+func (r *Repository) GetAllByOfferID(ctx context.Context, offerID uuid.UUID) ([]entity.Subscription, error) {
+	logrus.Infof("SubscriptionRepository.GetAllByOfferID called: offerID=%s", offerID)
+	query, args, _ := r.Builder.
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at").
+		From("subscription s").
+		Where("s.offer_id = ?", offerID).
+		ToSql()
+
+	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.GetAllByOfferID error: ", err)
+		return nil, fmt.Errorf("SubscriptionRepository.GetAllByOfferID - failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subs []entity.Subscription
+	for rows.Next() {
+		var sub entity.Subscription
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+			logrus.Error("SubscriptionRepository.GetAllByOfferID scan error: ", err)
+			return nil, fmt.Errorf("SubscriptionRepository.GetAllByOfferID - scan error: %w", err)
+		}
+		subs = append(subs, sub)
+	}
+	logrus.Infof("SubscriptionRepository.GetAllByOfferID success: count=%d", len(subs))
+	return subs, nil
+}
+
+func (r *Repository) GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.Subscription, error) {
+	logrus.Infof("SubscriptionRepository.GetAllByUserID called: userID=%s", userID)
+
+	query, args, _ := r.Builder.
+		Select("id", "user_id", "offer_id", "start_date", "end_date", "created_at", "updated_at").
+		From("subscription").
+		Where("user_id = ?", userID).
+		ToSql()
+
+	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.GetAllByUserID error: ", err)
+		return nil, fmt.Errorf("SubscriptionRepository.GetAllByUserID - failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subs []entity.Subscription
+
+	for rows.Next() {
+		var sub entity.Subscription
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+			logrus.Error("SubscriptionRepository.GetAllByUserID scan error: ", err)
+			return nil, fmt.Errorf("SubscriptionRepository.GetAllByUserID - scan error: %w", err)
+		}
+		subs = append(subs, sub)
+	}
+
+	logrus.Infof("SubscriptionRepository.GetAllByUserID success: count=%d", len(subs))
 	return subs, nil
 }

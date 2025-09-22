@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS subscription (
 CREATE INDEX IF NOT EXISTS idx_subscription_user_id ON subscription(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscription_start_date ON subscription(start_date);
 CREATE INDEX IF NOT EXISTS idx_subscription_end_date ON subscription(end_date);
+CREATE INDEX IF NOT EXISTS idx_subscription_offer_id ON subscription(offer_id);
 CREATE INDEX IF NOT EXISTS idx_offer_name_price ON offer(name, price);
 -- +goose StatementEnd
 

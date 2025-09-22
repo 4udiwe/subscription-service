@@ -3,7 +3,7 @@ package offer
 import (
 	"context"
 
-	"github.com/4udiwe/subscription-serivce/internal/entity"
+	"github.com/4udiwe/subscription-service/internal/entity"
 	"github.com/google/uuid"
 )
 

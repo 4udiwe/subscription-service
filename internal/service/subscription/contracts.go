@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/4udiwe/subscription-serivce/internal/entity"
+	"github.com/4udiwe/subscription-service/internal/entity"
 	"github.com/google/uuid"
 )
 
 type SubscriptionRepository interface {
 	Create(ctx context.Context, userID, offerID uuid.UUID, startDate, endDate time.Time) (entity.Subscription, error)
-	GetAll(ctx context.Context) ([]entity.Subscription, error)
-	GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.Subscription, error)
-	//GetById(ctx context.Context, id uuid.UUID) (entity.Subscription, error)
+	GetAll(ctx context.Context) ([]entity.SubscriptionFullInfo, error)
+	GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error)
+	// GetById(ctx context.Context, id uuid.UUID) (entity.Subscription, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetAllByUserIDAndSubscriptionName(
 		ctx context.Context,
@@ -20,7 +20,7 @@ type SubscriptionRepository interface {
 		subscriptionName string,
 		startPeriod *time.Time,
 		endPeriod *time.Time,
-	) ([]entity.Subscription, error)
+	) ([]entity.SubscriptionFullInfo, error)
 }
 
 type OfferRepository interface {

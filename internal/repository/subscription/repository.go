@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/4udiwe/subscription-serivce/internal/entity"
-	"github.com/4udiwe/subscription-serivce/pkg/postgres"
+	"github.com/4udiwe/subscription-service/internal/entity"
+	"github.com/4udiwe/subscription-service/pkg/postgres"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -37,19 +37,21 @@ func (r *Repository) Create(ctx context.Context, userID, offerID uuid.UUID, star
 	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(
 		&sub.ID, &sub.CreatedAt, &sub.UpdatedAt,
 	)
+	logrus.Debugf("Scanned values: ID=%s, CreatedAt=%s, UpdatedAt=%s", sub.ID.String(), sub.CreatedAt.String(), sub.UpdatedAt.String())
 	if err != nil {
 		logrus.Error("SubscriptionRepository.Create error: ", err)
 		return entity.Subscription{}, fmt.Errorf("SubscriptionRepository.Create - failed to create subscription: %w", err)
 	}
-	logrus.Infof("SubscriptionRepository.Create success: id=%s", sub.ID)
+	logrus.Infof("SubscriptionRepository.Create success: id=%s", sub.ID.String())
 	return sub, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context) ([]entity.Subscription, error) {
+func (r *Repository) GetAll(ctx context.Context) ([]entity.SubscriptionFullInfo, error) {
 	logrus.Info("SubscriptionRepository.GetAll called")
 	query, args, _ := r.Builder.
-		Select("id", "user_id", "offer_id", "start_date", "end_date", "created_at", "updated_at").
-		From("subscription").
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at", "o.name", "o.price").
+		From("subscription s").
+		Join("offer o ON s.offer_id = o.id").
 		ToSql()
 
 	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
@@ -59,10 +61,10 @@ func (r *Repository) GetAll(ctx context.Context) ([]entity.Subscription, error) 
 	}
 	defer rows.Close()
 
-	var subs []entity.Subscription
+	var subs []entity.SubscriptionFullInfo
 	for rows.Next() {
-		var sub entity.Subscription
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+		var sub entity.SubscriptionFullInfo
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt, &sub.OfferName, &sub.Price); err != nil {
 			logrus.Error("SubscriptionRepository.GetAll scan error: ", err)
 			return nil, fmt.Errorf("SubscriptionRepository.GetAll - scan error: %w", err)
 		}
@@ -119,11 +121,11 @@ func (r *Repository) GetAllByUserIDAndSubscriptionName(
 	subscriptionName string,
 	startPeriod *time.Time,
 	endPeriod *time.Time,
-) ([]entity.Subscription, error) {
+) ([]entity.SubscriptionFullInfo, error) {
 	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startDate=%v, endDate=%v", userID, subscriptionName, startPeriod, endPeriod)
 
 	builder := r.Builder.
-		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at").
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at", "o.name", "o.price").
 		From("subscription s").
 		Join("offer o ON s.offer_id = o.id").
 		Where("s.user_id = ?", userID).
@@ -145,10 +147,10 @@ func (r *Repository) GetAllByUserIDAndSubscriptionName(
 	}
 	defer rows.Close()
 
-	var subs []entity.Subscription
+	var subs []entity.SubscriptionFullInfo
 	for rows.Next() {
-		var sub entity.Subscription
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+		var sub entity.SubscriptionFullInfo
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt, &sub.OfferName, &sub.Price); err != nil {
 			logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName scan error: ", err)
 			return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - scan error: %w", err)
 		}
@@ -163,6 +165,7 @@ func (r *Repository) GetAllByOfferID(ctx context.Context, offerID uuid.UUID) ([]
 	query, args, _ := r.Builder.
 		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at").
 		From("subscription s").
+		Join("offer o ON s.offer_id = o.id").
 		Where("s.offer_id = ?", offerID).
 		ToSql()
 
@@ -186,13 +189,14 @@ func (r *Repository) GetAllByOfferID(ctx context.Context, offerID uuid.UUID) ([]
 	return subs, nil
 }
 
-func (r *Repository) GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.Subscription, error) {
+func (r *Repository) GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error) {
 	logrus.Infof("SubscriptionRepository.GetAllByUserID called: userID=%s", userID)
 
 	query, args, _ := r.Builder.
-		Select("id", "user_id", "offer_id", "start_date", "end_date", "created_at", "updated_at").
-		From("subscription").
-		Where("user_id = ?", userID).
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at", "o.name", "o.price").
+		From("subscription s").
+		Join("offer o ON s.offer_id = o.id").
+		Where("s.user_id = ?", userID).
 		ToSql()
 
 	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
@@ -202,11 +206,11 @@ func (r *Repository) GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]en
 	}
 	defer rows.Close()
 
-	var subs []entity.Subscription
+	var subs []entity.SubscriptionFullInfo
 
 	for rows.Next() {
-		var sub entity.Subscription
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt); err != nil {
+		var sub entity.SubscriptionFullInfo
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt, &sub.OfferName, &sub.Price); err != nil {
 			logrus.Error("SubscriptionRepository.GetAllByUserID scan error: ", err)
 			return nil, fmt.Errorf("SubscriptionRepository.GetAllByUserID - scan error: %w", err)
 		}

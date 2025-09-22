@@ -15,3 +15,9 @@ type Subscription struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
+
+type SubscriptionFullInfo struct {
+	Subscription
+	OfferName string `db:"offer_name"`
+	Price     int    `db:"price"`
+}

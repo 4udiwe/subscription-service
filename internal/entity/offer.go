@@ -12,5 +12,5 @@ type Offer struct {
 	Price         int       `db:"price"`
 	DurationMonth int       `db:"duration_month"`
 	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
 }

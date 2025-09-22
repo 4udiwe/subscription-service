@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/4udiwe/subscription-serivce/internal/entity"
-	offer_repo "github.com/4udiwe/subscription-serivce/internal/repository/offer"
-	subscription_repo "github.com/4udiwe/subscription-serivce/internal/repository/subscription"
-	"github.com/4udiwe/subscription-serivce/pkg/transactor"
+	"github.com/4udiwe/subscription-service/internal/entity"
+	offer_repo "github.com/4udiwe/subscription-service/internal/repository/offer"
+	subscription_repo "github.com/4udiwe/subscription-service/internal/repository/subscription"
+	"github.com/4udiwe/subscription-service/pkg/transactor"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -34,10 +34,9 @@ func (s *SubscriptionService) CreateSubscription(
 	price int,
 	startDate time.Time,
 	endDate *time.Time,
-) (entity.Subscription, error) {
-
+) (entity.SubscriptionFullInfo, error) {
 	logrus.Infof("SubscriptionService.CreateSubscription called: userID=%s, serviceName=%s, price=%d, startDate=%v, endDate=%v", userID, serviceName, price, startDate, endDate)
-	var sub entity.Subscription
+	var sub entity.SubscriptionFullInfo
 
 	err := s.txManager.WithinTransaction(ctx, func(ctx context.Context) error {
 		// check if offer with given name and prise exists
@@ -55,11 +54,15 @@ func (s *SubscriptionService) CreateSubscription(
 					logrus.Errorf("SubscriptionService.CreateSubscription error creating offer: %v", err)
 					return err
 				}
+			} else {
+				return err
 			}
-			return err
 		}
 		// create subscription
-		sub, err = s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonth, 0))
+		sub.Subscription, err = s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonth, 0))
+		sub.OfferName = offer.Name
+		sub.Price = offer.Price
+
 		if err != nil {
 			logrus.Errorf("SubscriptionService.CreateSubscription error creating subscription: %v", err)
 		}
@@ -68,34 +71,41 @@ func (s *SubscriptionService) CreateSubscription(
 
 	if err != nil {
 		logrus.Errorf("SubscriptionService.CreateSubscription error: %v", err)
-		return entity.Subscription{}, err
+		return entity.SubscriptionFullInfo{}, err
 	}
 	logrus.Infof("SubscriptionService.CreateSubscription success: id=%s", sub.ID)
 	return sub, nil
 }
 
-func (s *SubscriptionService) CreateSubscriptionByOfferID(ctx context.Context, userID, offerID uuid.UUID, startDate time.Time) (entity.Subscription, error) {
+func (s *SubscriptionService) CreateSubscriptionByOfferID(ctx context.Context, userID, offerID uuid.UUID, startDate time.Time) (entity.SubscriptionFullInfo, error) {
 	logrus.Infof("SubscriptionService.CreateSubscriptionByOfferID called: userID=%s, offerID=%s, startDate=%v", userID, offerID, startDate)
 	offer, err := s.offerRepository.GetByID(ctx, offerID)
 	if err != nil {
 		if errors.Is(err, offer_repo.ErrOfferNotFound) {
 			logrus.Errorf("SubscriptionService.CreateSubscriptionByOfferID error: offer not found")
-			return entity.Subscription{}, ErrOfferNotFound
+			return entity.SubscriptionFullInfo{}, ErrOfferNotFound
 		}
 		logrus.Errorf("SubscriptionService.CreateSubscriptionByOfferID error: %v", err)
-		return entity.Subscription{}, err
+		return entity.SubscriptionFullInfo{}, err
 	}
 
 	sub, err := s.subRepository.Create(ctx, userID, offer.ID, startDate, startDate.AddDate(0, offer.DurationMonth, 0))
 	if err != nil {
 		logrus.Errorf("SubscriptionService.CreateSubscriptionByOfferID error creating subscription: %v", err)
-		return entity.Subscription{}, err
+		return entity.SubscriptionFullInfo{}, err
 	}
+
+	subFullInfo := entity.SubscriptionFullInfo{
+		Subscription: sub,
+		OfferName:    offer.Name,
+		Price:        offer.Price,
+	}
+
 	logrus.Infof("SubscriptionService.CreateSubscriptionByOfferID success: id=%s", sub.ID)
-	return sub, nil
+	return subFullInfo, nil
 }
 
-func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context) ([]entity.Subscription, error) {
+func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context) ([]entity.SubscriptionFullInfo, error) {
 	logrus.Info("SubscriptionService.GetAllSubscriptions called")
 	subs, err := s.subRepository.GetAll(ctx)
 	if err != nil {
@@ -106,21 +116,27 @@ func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context) ([]entity
 	return subs, nil
 }
 
-func (s *SubscriptionService) GetAllByUserIDAndSubscriptionName(
+func (s *SubscriptionService) GetAllWithPriceByUserIDAndSubscriptionName(
 	ctx context.Context,
 	userID uuid.UUID,
 	subscriptionName string,
 	startPeriod *time.Time,
 	endPeriod *time.Time,
-) ([]entity.Subscription, error) {
-	logrus.Infof("SubscriptionService.GetAllByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startPeriod=%v, endPeriod=%v", userID, subscriptionName, startPeriod, endPeriod)
-	subs, err := s.subRepository.GetAllByUserIDAndSubscriptionName(ctx, userID, subscriptionName, startPeriod, endPeriod)
+) (subs []entity.SubscriptionFullInfo, price int, err error) {
+	logrus.Infof("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startPeriod=%v, endPeriod=%v", userID, subscriptionName, startPeriod, endPeriod)
+
+	subs, err = s.subRepository.GetAllByUserIDAndSubscriptionName(ctx, userID, subscriptionName, startPeriod, endPeriod)
 	if err != nil {
-		logrus.Errorf("SubscriptionService.GetAllByUserIDAndSubscriptionName error: %v", err)
-		return nil, err
+		logrus.Errorf("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName error: %v", err)
+		return nil, 0, err
 	}
-	logrus.Infof("SubscriptionService.GetAllByUserIDAndSubscriptionName success: count=%d", len(subs))
-	return subs, nil
+
+	for _, sub := range subs {
+		price += sub.Price
+	}
+
+	logrus.Infof("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName success: count=%d", len(subs))
+	return subs, price, nil
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subID uuid.UUID) error {
@@ -138,7 +154,7 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subID uuid
 	return nil
 }
 
-func (s *SubscriptionService) GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.Subscription, error) {
+func (s *SubscriptionService) GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error) {
 	logrus.Infof("SubscriptionService.GetAllSubscriptionsByUserID called: userID=%s", userID)
 
 	subs, err := s.subRepository.GetAllByUserID(ctx, userID)

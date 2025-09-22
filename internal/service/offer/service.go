@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/4udiwe/subscription-serivce/internal/entity"
-	offer_repo "github.com/4udiwe/subscription-serivce/internal/repository/offer"
-	"github.com/4udiwe/subscription-serivce/pkg/transactor"
+	"github.com/4udiwe/subscription-service/internal/entity"
+	offer_repo "github.com/4udiwe/subscription-service/internal/repository/offer"
+	"github.com/4udiwe/subscription-service/pkg/transactor"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

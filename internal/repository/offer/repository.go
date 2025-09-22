@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/4udiwe/subscription-serivce/internal/database"
-	"github.com/4udiwe/subscription-serivce/internal/entity"
-	"github.com/4udiwe/subscription-serivce/pkg/postgres"
+	"github.com/4udiwe/subscription-service/internal/database"
+	"github.com/4udiwe/subscription-service/internal/entity"
+	"github.com/4udiwe/subscription-service/pkg/postgres"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
@@ -26,7 +26,7 @@ func (r *Repository) Create(ctx context.Context, name string, price int, duratio
 
 	query, args, _ := r.Builder.
 		Insert("offer").
-		Columns("name", "price", "duration_month").
+		Columns("name", "price", "duration_months").
 		Values(name, price, durationMonth).
 		Suffix("RETURNING id, created_at").
 		ToSql()
@@ -55,7 +55,7 @@ func (r *Repository) Create(ctx context.Context, name string, price int, duratio
 func (r *Repository) GetAll(ctx context.Context) ([]entity.Offer, error) {
 	logrus.Info("OfferRepository.GetAll called")
 	query, args, _ := r.Builder.
-		Select("id", "name", "price", "duration_month", "created_at, updated_at").
+		Select("id", "name", "price", "duration_months", "created_at, updated_at").
 		From("offer").
 		ToSql()
 
@@ -83,7 +83,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]entity.Offer, error) {
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (entity.Offer, error) {
 	logrus.Infof("OfferRepository.GetById called: id=%d", id)
 	query, args, _ := r.Builder.
-		Select("id", "name", "price", "duration_month", "created_at").
+		Select("id", "name", "price", "duration_months", "created_at").
 		From("offer").
 		Where("id = ?", id).
 		ToSql()
@@ -128,7 +128,7 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *Repository) GetByNameAndPrice(ctx context.Context, name string, price int) (entity.Offer, error) {
 	logrus.Infof("OfferRepository.GetByNameAndPrice called: name=%s, price=%d", name, price)
 	query, args, _ := r.Builder.
-		Select("id", "name", "price", "duration_month", "created_at", "updated_at").
+		Select("id", "name", "price", "duration_months", "created_at", "updated_at").
 		From("offer").
 		Where("name = ? AND price = ?", name, price).
 		ToSql()

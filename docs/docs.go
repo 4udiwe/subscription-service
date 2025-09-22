@@ -718,8 +718,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Сервис для агрегации онлайн-подписок (тестовое задание).",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

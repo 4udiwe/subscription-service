@@ -6,6 +6,7 @@ import (
 
 	"github.com/4udiwe/subscription-service/pkg/validator"
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 func (app *App) EchoHandler() *echo.Echo {
@@ -27,6 +28,9 @@ func (app *App) EchoHandler() *echo.Echo {
 }
 
 func (app *App) configureRouter(handler *echo.Echo) {
+
+	handler.GET("/swagger/*", echoSwagger.WrapHandler)
+
 	offersGroup := handler.Group("offers")
 	{
 		offersGroup.GET("", app.GetOffersHandler().Handle)

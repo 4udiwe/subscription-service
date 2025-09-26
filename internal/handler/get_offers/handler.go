@@ -30,6 +30,7 @@ type Response struct {
 // @Accept json
 // @Produce json
 // @Success 200 {object} Response
+// @Failure 400 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /offers [get]
 func (h *handler) Handle(c echo.Context, in Request) error {

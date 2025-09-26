@@ -121,11 +121,11 @@ func (r *Repository) GetAllByUserIDAndSubscriptionName(
 	subscriptionName string,
 	startPeriod *time.Time,
 	endPeriod *time.Time,
-) ([]entity.SubscriptionFullInfo, error) {
+) (subs []entity.SubscriptionFullInfo, totalPrice int, err error) {
 	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startDate=%v, endDate=%v", userID, subscriptionName, startPeriod, endPeriod)
 
 	builder := r.Builder.
-		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at", "o.name", "o.price").
+		Select("s.id", "s.user_id", "s.offer_id", "s.start_date", "s.end_date", "s.created_at", "s.updated_at", "o.name", "o.price", "SUM(o.price) OVER() AS total_price").
 		From("subscription s").
 		Join("offer o ON s.offer_id = o.id").
 		Where("s.user_id = ?", userID).
@@ -143,21 +143,20 @@ func (r *Repository) GetAllByUserIDAndSubscriptionName(
 	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
 	if err != nil {
 		logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName error: ", err)
-		return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - failed to get subscriptions: %w", err)
+		return nil, 0, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - failed to get subscriptions: %w", err)
 	}
 	defer rows.Close()
 
-	var subs []entity.SubscriptionFullInfo
 	for rows.Next() {
 		var sub entity.SubscriptionFullInfo
-		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt, &sub.OfferName, &sub.Price); err != nil {
+		if err := rows.Scan(&sub.ID, &sub.UserID, &sub.OfferID, &sub.StartDate, &sub.EndDate, &sub.CreatedAt, &sub.UpdatedAt, &sub.OfferName, &sub.Price, &totalPrice); err != nil {
 			logrus.Error("SubscriptionRepository.GetByUserIDAndSubscriptionName scan error: ", err)
-			return nil, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - scan error: %w", err)
+			return nil, 0, fmt.Errorf("SubscriptionRepository.GetByUserIDAndSubscriptionName - scan error: %w", err)
 		}
 		subs = append(subs, sub)
 	}
 	logrus.Infof("SubscriptionRepository.GetByUserIDAndSubscriptionName success: count=%d", len(subs))
-	return subs, nil
+	return subs, totalPrice, nil
 }
 
 func (r *Repository) GetAllByOfferID(ctx context.Context, offerID uuid.UUID) ([]entity.Subscription, error) {
@@ -219,4 +218,26 @@ func (r *Repository) GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]en
 
 	logrus.Infof("SubscriptionRepository.GetAllByUserID success: count=%d", len(subs))
 	return subs, nil
+}
+
+func (r *Repository) HasActiveSubscriptionOnServiceForDate(ctx context.Context, userID uuid.UUID, serviceName string, date time.Time) (bool, error) {
+	logrus.Infof("SubscriptionRepository.HasActiveSubscriptionOnServiceForDate called: userID=%s, serviceName=%s, onDate=%s", userID, serviceName, date)
+
+	var count int
+	query, args, _ := r.Builder.
+		Select("COUNT(*)").
+		From("subscription s").
+		Join("offer o ON s.offer_id = o.id").
+		Where("s.user_id = ?", userID).
+		Where("o.name = ?", serviceName).
+		Where("s.start_date <= ? AND s.end_date > ?", date, date).
+		ToSql()
+
+	err := r.GetTxManager(ctx).QueryRow(ctx, query, args...).Scan(&count)
+	if err != nil {
+		logrus.Error("SubscriptionRepository.HasActiveSubscriptionOnServiceForDate error: ", err)
+		return false, fmt.Errorf("SubscriptionRepository.HasActiveSubscriptionOnServiceForDate - failed to check active subscription: %w", err)
+	}
+
+	return count > 0, nil
 }

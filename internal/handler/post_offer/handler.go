@@ -41,7 +41,7 @@ type Response struct {
 // @Produce json
 // @Param offer body Request true "Offer details"
 // @Success 201 {object} Response
-// @Failure 400 {string} ErrorResponse
+// @Failure 409 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /offers [post]
 func (h *handler) Handle(c echo.Context, in Request) error {

@@ -34,7 +34,7 @@ func (s *OfferService) CreateOffer(ctx context.Context, name string, price int, 
 			return entity.Offer{}, ErrOfferWithNameAndPriceAlreadyExists
 		}
 		logrus.Errorf("OfferService.CreateOffer error: %v", err)
-		return entity.Offer{}, err
+		return entity.Offer{}, ErrCannotCreateOffer
 	}
 
 	logrus.Infof("OfferService.CreateOffer success: offer created with ID=%d", offer.ID)
@@ -47,7 +47,7 @@ func (s *OfferService) GetAllOffers(ctx context.Context) ([]entity.Offer, error)
 	offers, err := s.offerRepository.GetAll(ctx)
 	if err != nil {
 		logrus.Errorf("OfferService.GetAllOffers error: %v", err)
-		return nil, err
+		return nil, ErrCannotFetchOffers
 	}
 
 	logrus.Info("OfferService.GetAllOffers success")
@@ -62,7 +62,7 @@ func (s *OfferService) DeleteOffer(ctx context.Context, offerID uuid.UUID) error
 		subs, err := s.subRepository.GetAllByOfferID(txCtx, offerID)
 		if err != nil {
 			logrus.Errorf("OfferService.DeleteOffer error fetching subscriptions: %v", err)
-			return err
+			return ErrCannotCheckActiveSubscriptions
 		}
 
 		// checking amount of subs
@@ -72,14 +72,19 @@ func (s *OfferService) DeleteOffer(ctx context.Context, offerID uuid.UUID) error
 		}
 
 		// if its zero -> delete
-		return s.offerRepository.Delete(txCtx, offerID)
-	})
-
-	if err != nil {
-		if errors.Is(err, offer_repo.ErrOfferNotFound) {
-			return ErrOfferNotFound
+		err = s.offerRepository.Delete(txCtx, offerID)
+		if err != nil {
+			if errors.Is(err, offer_repo.ErrOfferNotFound) {
+				return ErrOfferNotFound
+			}
+			logrus.Errorf("OfferService.DeleteOffer error deleting offer: %v", err)
+			return ErrCannotDeleteOffer
 		}
-		logrus.Errorf("OfferService.DeleteOffer error deleting offer: %v", err)
+
+		return nil
+	})
+	
+	if err != nil {
 		return err
 	}
 

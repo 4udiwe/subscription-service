@@ -20,7 +20,8 @@ type SubscriptionRepository interface {
 		subscriptionName string,
 		startPeriod *time.Time,
 		endPeriod *time.Time,
-	) ([]entity.SubscriptionFullInfo, error)
+	) (subs []entity.SubscriptionFullInfo, totalPrice int, err error)
+	HasActiveSubscriptionOnServiceForDate(ctx context.Context, userID uuid.UUID, serviceName string, date time.Time) (bool, error)
 }
 
 type OfferRepository interface {

@@ -1,11 +1,13 @@
 package post_sub_by_offer_id
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	h "github.com/4udiwe/subscription-service/internal/handler"
 	"github.com/4udiwe/subscription-service/internal/handler/decorator"
+	"github.com/4udiwe/subscription-service/internal/service/subscription"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -53,6 +55,12 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 	sub, err := h.s.CreateSubscriptionByOfferID(c.Request().Context(), in.UserID, in.OfferID, startDate)
 
 	if err != nil {
+		if errors.Is(err, subscription.ErrOfferNotFound) {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if errors.Is(err, subscription.ErrUserAlreadyHasActiveSubscription) {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

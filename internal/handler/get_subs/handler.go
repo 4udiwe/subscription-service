@@ -1,6 +1,7 @@
 package get_subs
 
 import (
+	"math"
 	"net/http"
 
 	"github.com/4udiwe/subscription-service/internal/entity"
@@ -11,6 +12,9 @@ import (
 	"github.com/samber/lo"
 )
 
+const PAGE_NUMBER = 1
+const PAGE_SIZE = 10
+
 type handler struct {
 	s SubscriptionService
 }
@@ -19,10 +23,17 @@ func New(s SubscriptionService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
-type Request struct{}
+type GetAllSubscriptionsRequest struct {
+	Page     int `query:"page"`
+	PageSize int `query:"page_size"`
+}
 
-type Response struct {
+type GetAllSubscriptionsResponse struct {
 	Subscriptions []Subscription `json:"subscriptions"`
+	Page          int            `json:"page"`
+	PageSize      int            `json:"page_size"`
+	TotalItems    int            `json:"total_items"`
+	TotalPages    int            `json:"total_pages"`
 }
 
 type Subscription struct {
@@ -40,17 +51,31 @@ type Subscription struct {
 // @Tags subscriptions
 // @Accept json
 // @Produce json
-// @Success 200 {object} Response
+// @Param page query int false "Номер страницы" default(1)
+// @Param page_size query int false "Размер страницы" default(10) maximum(100)
+// @Success 200 {object} GetAllSubscriptionsResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /subscriptions [get]
-func (h *handler) Handle(c echo.Context, in Request) error {
-	sub, err := h.s.GetAllSubscriptions(c.Request().Context())
+func (h *handler) Handle(c echo.Context, in GetAllSubscriptionsRequest) error {
+	if in.Page == 0 {
+		in.Page = PAGE_NUMBER
+	}
+
+	if in.PageSize <= 0 {
+		in.PageSize = PAGE_SIZE
+	} else if in.PageSize > 100 {
+		in.PageSize = 100
+	}
+
+	sub, totalCount, err := h.s.GetAllSubscriptions(c.Request().Context(), in.Page, in.PageSize)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, Response{
+	totalPages := int(math.Ceil(float64(totalCount) / float64(in.PageSize)))
+
+	return c.JSON(http.StatusOK, GetAllSubscriptionsResponse{
 		Subscriptions: lo.Map(sub, func(s entity.SubscriptionFullInfo, _ int) Subscription {
 			return Subscription{
 				SubscriptionID: s.ID,
@@ -61,5 +86,9 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 				EndDate:        s.EndDate.Format("2006-01-02"),
 			}
 		}),
+		Page:       in.Page,
+		PageSize:   in.PageSize,
+		TotalItems: totalCount,
+		TotalPages: totalPages,
 	})
 }

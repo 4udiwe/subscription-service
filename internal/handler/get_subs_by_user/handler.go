@@ -1,6 +1,7 @@
 package get_subs_by_user
 
 import (
+	"math"
 	"net/http"
 
 	"github.com/4udiwe/subscription-service/internal/entity"
@@ -11,6 +12,9 @@ import (
 	"github.com/samber/lo"
 )
 
+const PAGE_NUMBER = 1
+const PAGE_SIZE = 10
+
 type handler struct {
 	s SubscriptionService
 }
@@ -19,12 +23,18 @@ func New(s SubscriptionService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
-type Request struct {
-	UserID uuid.UUID `json:"user_id" validate:"required,uuid"`
+type GetSubscriptionsByUserRequest struct {
+	UserID   uuid.UUID `json:"user_id" validate:"required,uuid"`
+	Page     int       `query:"page"`
+	PageSize int       `query:"page_size"`
 }
 
-type Response struct {
+type GetSubscriptionsByUserResponse struct {
 	Subscriptions []Subscription `json:"subscriptions"`
+	Page          int            `json:"page"`
+	PageSize      int            `json:"page_size"`
+	TotalItems    int            `json:"total_items"`
+	TotalPages    int            `json:"total_pages"`
 }
 
 type Subscription struct {
@@ -42,18 +52,32 @@ type Subscription struct {
 // @Tags subscriptions
 // @Accept json
 // @Produce json
-// @Param user body Request true "user ID"
-// @Success 200 {object} Response
+// @Param user body GetSubscriptionsByUserRequest true "user ID"
+// @Param page query int false "Номер страницы" default(1)
+// @Param page_size query int false "Размер страницы" default(10) maximum(100)
+// @Success 200 {object} GetSubscriptionsByUserResponse
 // @Failure 500 {string} ErrorResponse
-// @Router /subscriptions/by-user [post]
-func (h *handler) Handle(c echo.Context, in Request) error {
-	sub, err := h.s.GetAllSubscriptionsByUserID(c.Request().Context(), in.UserID)
+// @Router /subscriptions/by-user [get]
+func (h *handler) Handle(c echo.Context, in GetSubscriptionsByUserRequest) error {
+	if in.Page == 0 {
+		in.Page = PAGE_NUMBER
+	}
+
+	if in.PageSize <= 0 {
+		in.PageSize = PAGE_SIZE
+	} else if in.PageSize > 100 {
+		in.PageSize = 100
+	}
+
+	sub, totalCount, err := h.s.GetAllSubscriptionsByUserID(c.Request().Context(), in.UserID, in.Page, in.PageSize)
 
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, Response{
+	totalPages := int(math.Ceil(float64(totalCount) / float64(in.PageSize)))
+
+	return c.JSON(http.StatusOK, GetSubscriptionsByUserResponse{
 		Subscriptions: lo.Map(sub, func(s entity.SubscriptionFullInfo, _ int) Subscription {
 			return Subscription{
 				SubscriptionID: s.ID,
@@ -64,5 +88,9 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 				EndDate:        s.EndDate.Format("2006-01-02"),
 			}
 		}),
+		Page:       in.Page,
+		PageSize:   in.PageSize,
+		TotalItems: totalCount,
+		TotalPages: totalPages,
 	})
 }

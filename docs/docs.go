@@ -30,11 +30,34 @@ const docTemplate = `{
                     "offers"
                 ],
                 "summary": "Получение всех офферов",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Размер страницы",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_offers.Response"
+                            "$ref": "#/definitions/internal_handler_get_offers.GetAllOffersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -64,7 +87,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/post_offer.Request"
+                            "$ref": "#/definitions/post_offer.PostOfferRequest"
                         }
                     }
                 ],
@@ -72,11 +95,11 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/post_offer.Response"
+                            "$ref": "#/definitions/post_offer.PostOfferResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "type": "string"
                         }
@@ -105,7 +128,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/delete_offer.Request"
+                            "$ref": "#/definitions/delete_offer.DeleteOfferRequest"
                         }
                     }
                 ],
@@ -144,11 +167,28 @@ const docTemplate = `{
                     "subscriptions"
                 ],
                 "summary": "Получение всех подписок",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Размер страницы",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_subs.Response"
+                            "$ref": "#/definitions/internal_handler_get_subs.GetAllSubscriptionsResponse"
                         }
                     },
                     "500": {
@@ -178,7 +218,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_post_sub_by_name.Request"
+                            "$ref": "#/definitions/internal_handler_post_sub_by_name.PostSubscriptionByNameRequest"
                         }
                     }
                 ],
@@ -186,7 +226,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_post_sub_by_name.Response"
+                            "$ref": "#/definitions/internal_handler_post_sub_by_name.PostSubscriptionByNameResponse"
                         }
                     },
                     "400": {
@@ -219,7 +259,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_delete_sub.Request"
+                            "$ref": "#/definitions/internal_handler_delete_sub.DeleteSubscriptionRequest"
                         }
                     }
                 ],
@@ -265,7 +305,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_post_sub_by_offer_id.Request"
+                            "$ref": "#/definitions/internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDRequest"
                         }
                     }
                 ],
@@ -273,7 +313,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_post_sub_by_offer_id.Response"
+                            "$ref": "#/definitions/internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDResponse"
                         }
                     },
                     "400": {
@@ -292,7 +332,7 @@ const docTemplate = `{
             }
         },
         "/subscriptions/by-user": {
-            "post": {
+            "get": {
                 "description": "Получение списка подписок для указанного пользователя",
                 "consumes": [
                     "application/json"
@@ -311,15 +351,30 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_subs_by_user.Request"
+                            "$ref": "#/definitions/internal_handler_get_subs_by_user.GetSubscriptionsByUserRequest"
                         }
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Размер страницы",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_subs_by_user.Response"
+                            "$ref": "#/definitions/internal_handler_get_subs_by_user.GetSubscriptionsByUserResponse"
                         }
                     },
                     "500": {
@@ -332,7 +387,7 @@ const docTemplate = `{
             }
         },
         "/subscriptions/by-user-and-subname": {
-            "post": {
+            "get": {
                 "description": "Получение списка подписок для указанного пользователя и названия подписки с возможностью фильтрации по дате начала и окончания",
                 "consumes": [
                     "application/json"
@@ -351,15 +406,30 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_subs_by_user_subname.Request"
+                            "$ref": "#/definitions/internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameRequest"
                         }
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Размер страницы",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handler_get_subs_by_user_subname.Response"
+                            "$ref": "#/definitions/internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameResponse"
                         }
                     },
                     "400": {
@@ -379,7 +449,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "delete_offer.Request": {
+        "delete_offer.DeleteOfferRequest": {
             "type": "object",
             "required": [
                 "offer_id"
@@ -413,7 +483,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_delete_sub.Request": {
+        "internal_handler_delete_sub.DeleteSubscriptionRequest": {
             "type": "object",
             "required": [
                 "subscription_id"
@@ -424,7 +494,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_get_offers.Response": {
+        "internal_handler_get_offers.GetAllOffersResponse": {
             "type": "object",
             "properties": {
                 "offers": {
@@ -432,17 +502,41 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_4udiwe_subscription-service_internal_entity.Offer"
                     }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
-        "internal_handler_get_subs.Response": {
+        "internal_handler_get_subs.GetAllSubscriptionsResponse": {
             "type": "object",
             "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
                 "subscriptions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/internal_handler_get_subs.Subscription"
                     }
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
@@ -469,25 +563,43 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_get_subs_by_user.Request": {
+        "internal_handler_get_subs_by_user.GetSubscriptionsByUserRequest": {
             "type": "object",
             "required": [
                 "user_id"
             ],
             "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
                 "user_id": {
                     "type": "string"
                 }
             }
         },
-        "internal_handler_get_subs_by_user.Response": {
+        "internal_handler_get_subs_by_user.GetSubscriptionsByUserResponse": {
             "type": "object",
             "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
                 "subscriptions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/internal_handler_get_subs_by_user.Subscription"
                     }
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
@@ -514,7 +626,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_get_subs_by_user_subname.Request": {
+        "internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameRequest": {
             "type": "object",
             "required": [
                 "offer_name",
@@ -527,6 +639,12 @@ const docTemplate = `{
                 "offer_name": {
                     "type": "string"
                 },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
                 "start_date": {
                     "type": "string"
                 },
@@ -535,14 +653,26 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_get_subs_by_user_subname.Response": {
+        "internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameResponse": {
             "type": "object",
             "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
                 "subscriptions": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/internal_handler_get_subs_by_user_subname.Subscription"
                     }
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 },
                 "total_price": {
                     "type": "integer"
@@ -572,7 +702,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_post_sub_by_name.Request": {
+        "internal_handler_post_sub_by_name.PostSubscriptionByNameRequest": {
             "type": "object",
             "required": [
                 "price",
@@ -599,7 +729,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_post_sub_by_name.Response": {
+        "internal_handler_post_sub_by_name.PostSubscriptionByNameResponse": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -622,7 +752,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_post_sub_by_offer_id.Request": {
+        "internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDRequest": {
             "type": "object",
             "required": [
                 "offer_id",
@@ -641,7 +771,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler_post_sub_by_offer_id.Response": {
+        "internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDResponse": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -664,7 +794,7 @@ const docTemplate = `{
                 }
             }
         },
-        "post_offer.Request": {
+        "post_offer.PostOfferRequest": {
             "type": "object",
             "required": [
                 "duration_months",
@@ -685,7 +815,7 @@ const docTemplate = `{
                 }
             }
         },
-        "post_offer.Response": {
+        "post_offer.PostOfferResponse": {
             "type": "object",
             "properties": {
                 "created_at": {

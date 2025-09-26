@@ -19,7 +19,7 @@ func New(s SubscriptionService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
-type Request struct {
+type DeleteSubscriptionRequest struct {
 	SubscriptionID uuid.UUID `json:"subscription_id" validate:"required,uuid"`
 }
 
@@ -28,12 +28,12 @@ type Request struct {
 // @Description Удаление подписки по ID. Не удаляет предложение, на которое была оформлена подписка.
 // @Tags subscriptions
 // @Accept json
-// @Param subscription body Request true "subscription to delete"
+// @Param subscription body DeleteSubscriptionRequest true "subscription to delete"
 // @Success 202 {string} string "No Content"
 // @Failure 404 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /subscriptions [delete]
-func (h *handler) Handle(c echo.Context, in Request) error {
+func (h *handler) Handle(c echo.Context, in DeleteSubscriptionRequest) error {
 	err := h.s.DeleteSubscription(c.Request().Context(), in.SubscriptionID)
 
 	if err != nil {

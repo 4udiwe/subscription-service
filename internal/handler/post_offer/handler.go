@@ -19,13 +19,13 @@ func New(s OfferService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
-type Request struct {
+type PostOfferRequest struct {
 	ServiceName    string `json:"service_name" validate:"required"`
 	Price          int    `json:"price" validate:"required,min=0"`
 	DurationMonths int    `json:"duration_months" validate:"required,min=1"`
 }
 
-type Response struct {
+type PostOfferResponse struct {
 	OfferID        uuid.UUID `json:"offer_id"`
 	ServiceName    string    `json:"service_name"`
 	Price          int       `json:"price"`
@@ -39,12 +39,12 @@ type Response struct {
 // @Tags offers
 // @Accept json
 // @Produce json
-// @Param offer body Request true "Offer details"
-// @Success 201 {object} Response
+// @Param offer body PostOfferRequest true "Offer details"
+// @Success 201 {object} PostOfferResponse
 // @Failure 409 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /offers [post]
-func (h *handler) Handle(c echo.Context, in Request) error {
+func (h *handler) Handle(c echo.Context, in PostOfferRequest) error {
 	offer, err := h.s.CreateOffer(c.Request().Context(), in.ServiceName, in.Price, in.DurationMonths)
 	if err != nil {
 		if errors.Is(err, service.ErrOfferWithNameAndPriceAlreadyExists) {
@@ -53,7 +53,7 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, Response{
+	return c.JSON(http.StatusCreated, PostOfferResponse{
 		OfferID:        offer.ID,
 		ServiceName:    offer.Name,
 		Price:          offer.Price,

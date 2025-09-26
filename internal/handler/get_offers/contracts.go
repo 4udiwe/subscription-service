@@ -7,5 +7,5 @@ import (
 )
 
 type OfferService interface {
-	GetAllOffers(ctx context.Context) ([]entity.Offer, error)
+	GetAllOffers(ctx context.Context, page int, pageSize int) (offers []entity.Offer, total int, err error)
 }

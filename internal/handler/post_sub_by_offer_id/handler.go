@@ -20,13 +20,13 @@ func New(s SubscriptionService) h.Handler {
 	return decorator.NewBindAndValidateDecorator(&handler{s: s})
 }
 
-type Request struct {
+type PostSubscriptionByOfferIDRequest struct {
 	UserID    uuid.UUID `json:"user_id" validate:"required,uuid"`
 	OfferID   uuid.UUID `json:"offer_id" validate:"required,uuid"`
 	StartDate string    `json:"start_date" validate:"required,datetime=2006-01-02"`
 }
 
-type Response struct {
+type PostSubscriptionByOfferIDResponse struct {
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	UserID         uuid.UUID `json:"user_id"`
 	OfferName      string    `json:"offer_name"`
@@ -41,12 +41,12 @@ type Response struct {
 // @Tags subscriptions
 // @Accept json
 // @Produce json
-// @Param subscription body Request true "subscription info"
-// @Success 201 {object} Response
+// @Param subscription body PostSubscriptionByOfferIDRequest true "subscription info"
+// @Success 201 {object} PostSubscriptionByOfferIDResponse
 // @Failure 400 {string} ErrorResponse
 // @Failure 500 {string} ErrorResponse
 // @Router /subscriptions/by-offer [post]
-func (h *handler) Handle(c echo.Context, in Request) error {
+func (h *handler) Handle(c echo.Context, in PostSubscriptionByOfferIDRequest) error {
 	startDate, err := time.Parse("2006-01-02", in.StartDate)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid start_date format")
@@ -64,7 +64,7 @@ func (h *handler) Handle(c echo.Context, in Request) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, Response{
+	return c.JSON(http.StatusCreated, PostSubscriptionByOfferIDResponse{
 		SubscriptionID: sub.ID,
 		UserID:         sub.UserID,
 		OfferName:      sub.OfferName,

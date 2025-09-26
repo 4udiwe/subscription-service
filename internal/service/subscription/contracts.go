@@ -10,8 +10,8 @@ import (
 
 type SubscriptionRepository interface {
 	Create(ctx context.Context, userID, offerID uuid.UUID, startDate, endDate time.Time) (entity.Subscription, error)
-	GetAll(ctx context.Context) ([]entity.SubscriptionFullInfo, error)
-	GetAllByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error)
+	GetAll(ctx context.Context, limit int, offset int) (subs []entity.SubscriptionFullInfo, total int, err error)
+	GetAllByUserID(ctx context.Context, userID uuid.UUID, limit int, offset int) (subs []entity.SubscriptionFullInfo, total int, err error)
 	// GetById(ctx context.Context, id uuid.UUID) (entity.Subscription, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetAllByUserIDAndSubscriptionName(
@@ -20,7 +20,9 @@ type SubscriptionRepository interface {
 		subscriptionName string,
 		startPeriod *time.Time,
 		endPeriod *time.Time,
-	) (subs []entity.SubscriptionFullInfo, totalPrice int, err error)
+		limit int,
+		offset int,
+	) (subs []entity.SubscriptionFullInfo, totalPrice int, totalCount int, err error)
 	HasActiveSubscriptionOnServiceForDate(ctx context.Context, userID uuid.UUID, serviceName string, date time.Time) (bool, error)
 }
 

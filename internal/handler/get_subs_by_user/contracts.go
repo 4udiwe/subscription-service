@@ -8,5 +8,5 @@ import (
 )
 
 type SubscriptionService interface {
-	GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error)
+	GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]entity.SubscriptionFullInfo, int, error)
 }

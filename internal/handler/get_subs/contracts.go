@@ -7,5 +7,5 @@ import (
 )
 
 type SubscriptionService interface {
-	GetAllSubscriptions(ctx context.Context) ([]entity.SubscriptionFullInfo, error)
+	GetAllSubscriptions(ctx context.Context, page int, pageSize int) ([]entity.SubscriptionFullInfo, int, error)
 }

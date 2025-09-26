@@ -41,17 +41,20 @@ func (s *OfferService) CreateOffer(ctx context.Context, name string, price int, 
 	return offer, nil
 }
 
-func (s *OfferService) GetAllOffers(ctx context.Context) ([]entity.Offer, error) {
+func (s *OfferService) GetAllOffers(ctx context.Context, page int, pageSize int) (offers []entity.Offer, total int, err error) {
 	logrus.Info("OfferService.GetAllOffers called")
 
-	offers, err := s.offerRepository.GetAll(ctx)
+	limit := pageSize
+	offset := (page - 1) * pageSize
+
+	offers, total, err = s.offerRepository.GetAll(ctx, limit, offset)
 	if err != nil {
 		logrus.Errorf("OfferService.GetAllOffers error: %v", err)
-		return nil, ErrCannotFetchOffers
+		return nil, 0, ErrCannotFetchOffers
 	}
 
 	logrus.Info("OfferService.GetAllOffers success")
-	return offers, nil
+	return offers, total, nil
 }
 
 func (s *OfferService) DeleteOffer(ctx context.Context, offerID uuid.UUID) error {
@@ -83,7 +86,7 @@ func (s *OfferService) DeleteOffer(ctx context.Context, offerID uuid.UUID) error
 
 		return nil
 	})
-	
+
 	if err != nil {
 		return err
 	}

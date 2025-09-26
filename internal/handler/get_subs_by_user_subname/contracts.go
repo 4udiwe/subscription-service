@@ -15,5 +15,7 @@ type SubscriptionService interface {
 		subscriptionName string,
 		startPeriod *time.Time,
 		endPeriod *time.Time,
-	) (subs []entity.SubscriptionFullInfo, price int, err error)
+		page int,
+		pageSize int,
+	) (subs []entity.SubscriptionFullInfo, price int, totalCount int, err error)
 }

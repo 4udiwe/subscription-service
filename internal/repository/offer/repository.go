@@ -52,32 +52,48 @@ func (r *Repository) Create(ctx context.Context, name string, price int, duratio
 	return offer, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context) ([]entity.Offer, error) {
+func (r *Repository) GetAll(ctx context.Context, limit int, offset int) (offers []entity.Offer, total int, err error) {
 	logrus.Info("OfferRepository.GetAll called")
+
+	// base query
 	query, args, _ := r.Builder.
 		Select("id", "name", "price", "duration_months", "created_at, updated_at").
 		From("offer").
+		OrderBy("created_at DESC").
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
 		ToSql()
 
 	rows, err := r.GetTxManager(ctx).Query(ctx, query, args...)
 	if err != nil {
 		logrus.Error("OfferRepository.GetAll error: ", err)
-		return nil, fmt.Errorf("OfferRepository.GetAll - failed to get offers: %w", err)
+		return nil, 0, fmt.Errorf("OfferRepository.GetAll - failed to get offers: %w", err)
 	}
 	defer rows.Close()
 
-	var offers []entity.Offer
 	for rows.Next() {
 		var offer entity.Offer
 		if err := rows.Scan(&offer.ID, &offer.Name, &offer.Price, &offer.DurationMonths, &offer.CreatedAt, &offer.UpdatedAt); err != nil {
 			logrus.Error("OfferRepository.GetAll scan error: ", err)
-			return nil, fmt.Errorf("OfferRepository.GetAll - scan error: %w", err)
+			return nil, 0, fmt.Errorf("OfferRepository.GetAll - scan error: %w", err)
 		}
 		offers = append(offers, offer)
 	}
 
+	// Get total count for pagination
+	countQuery, countArgs, _ := r.Builder.
+		Select("COUNT(*)").
+		From("offer").
+		ToSql()
+
+	err = r.GetTxManager(ctx).QueryRow(ctx, countQuery, countArgs...).Scan(&total)
+	if err != nil {
+		logrus.Error("OfferRepository.GetAll count query error: ", err)
+		return nil, 0, fmt.Errorf("OfferRepository.GetAll - failed to get total count: %w", err)
+	}
+
 	logrus.Infof("OfferRepository.GetAll success: offers count=%d", len(offers))
-	return offers, nil
+	return offers, total, nil
 }
 
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (entity.Offer, error) {

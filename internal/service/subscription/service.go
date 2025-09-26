@@ -144,17 +144,20 @@ func (s *SubscriptionService) CreateSubscriptionByOfferID(ctx context.Context, u
 	return subFullInfo, nil
 }
 
-func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context) ([]entity.SubscriptionFullInfo, error) {
+func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context, page int, pageSize int) ([]entity.SubscriptionFullInfo, int, error) {
 	logrus.Info("SubscriptionService.GetAllSubscriptions called")
 
-	subs, err := s.subRepository.GetAll(ctx)
+	limit := pageSize
+	offset := (page - 1) * pageSize
+
+	subs, total, err := s.subRepository.GetAll(ctx, limit, offset)
 	if err != nil {
 		logrus.Errorf("SubscriptionService.GetAllSubscriptions error: %v", err)
-		return nil, ErrCannotFetchSubscriptions
+		return nil, 0, ErrCannotFetchSubscriptions
 	}
 
 	logrus.Infof("SubscriptionService.GetAllSubscriptions success: count=%d", len(subs))
-	return subs, nil
+	return subs, total, nil
 }
 
 func (s *SubscriptionService) GetAllWithPriceByUserIDAndSubscriptionName(
@@ -163,17 +166,22 @@ func (s *SubscriptionService) GetAllWithPriceByUserIDAndSubscriptionName(
 	subscriptionName string,
 	startPeriod *time.Time,
 	endPeriod *time.Time,
-) (subs []entity.SubscriptionFullInfo, price int, err error) {
+	page int,
+	pageSize int,
+) (subs []entity.SubscriptionFullInfo, price int, totalCount int, err error) {
 	logrus.Infof("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName called: userID=%s, subscriptionName=%s, startPeriod=%v, endPeriod=%v", userID, subscriptionName, startPeriod, endPeriod)
 
-	subs, price, err = s.subRepository.GetAllByUserIDAndSubscriptionName(ctx, userID, subscriptionName, startPeriod, endPeriod)
+	limit := pageSize
+	offset := (page - 1) * pageSize
+
+	subs, price, totalCount, err = s.subRepository.GetAllByUserIDAndSubscriptionName(ctx, userID, subscriptionName, startPeriod, endPeriod, limit, offset)
 	if err != nil {
 		logrus.Errorf("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName error: %v", err)
-		return nil, 0, ErrCannotFetchSubscriptions
+		return nil, 0, 0, ErrCannotFetchSubscriptions
 	}
 
 	logrus.Infof("SubscriptionService.GetAllWithPriceByUserIDAndSubscriptionName success: count=%d", len(subs))
-	return subs, price, nil
+	return subs, price, totalCount, nil
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subID uuid.UUID) error {
@@ -193,15 +201,18 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subID uuid
 	return nil
 }
 
-func (s *SubscriptionService) GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID) ([]entity.SubscriptionFullInfo, error) {
+func (s *SubscriptionService) GetAllSubscriptionsByUserID(ctx context.Context, userID uuid.UUID, page int, pageSize int) ([]entity.SubscriptionFullInfo, int, error) {
 	logrus.Infof("SubscriptionService.GetAllSubscriptionsByUserID called: userID=%s", userID)
 
-	subs, err := s.subRepository.GetAllByUserID(ctx, userID)
+	limit := pageSize
+	offset := (page - 1) * pageSize
+
+	subs, totalCount, err := s.subRepository.GetAllByUserID(ctx, userID, limit, offset)
 	if err != nil {
 		logrus.Errorf("SubscriptionService.GetAllSubscriptionsByUserID error: %v", err)
-		return nil, ErrCannotFetchSubscriptions
+		return nil, 0, ErrCannotFetchSubscriptions
 	}
 
 	logrus.Infof("SubscriptionService.GetAllSubscriptionsByUserID success: count=%d", len(subs))
-	return subs, nil
+	return subs, totalCount, nil
 }

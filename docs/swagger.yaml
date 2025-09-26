@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  delete_offer.Request:
+  delete_offer.DeleteOfferRequest:
     properties:
       offer_id:
         type: string
@@ -22,26 +22,42 @@ definitions:
       updatedAt:
         type: string
     type: object
-  internal_handler_delete_sub.Request:
+  internal_handler_delete_sub.DeleteSubscriptionRequest:
     properties:
       subscription_id:
         type: string
     required:
     - subscription_id
     type: object
-  internal_handler_get_offers.Response:
+  internal_handler_get_offers.GetAllOffersResponse:
     properties:
       offers:
         items:
           $ref: '#/definitions/github_com_4udiwe_subscription-service_internal_entity.Offer'
         type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
     type: object
-  internal_handler_get_subs.Response:
+  internal_handler_get_subs.GetAllSubscriptionsResponse:
     properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
       subscriptions:
         items:
           $ref: '#/definitions/internal_handler_get_subs.Subscription'
         type: array
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
     type: object
   internal_handler_get_subs.Subscription:
     properties:
@@ -58,19 +74,31 @@ definitions:
       user_id:
         type: string
     type: object
-  internal_handler_get_subs_by_user.Request:
+  internal_handler_get_subs_by_user.GetSubscriptionsByUserRequest:
     properties:
+      page:
+        type: integer
+      pageSize:
+        type: integer
       user_id:
         type: string
     required:
     - user_id
     type: object
-  internal_handler_get_subs_by_user.Response:
+  internal_handler_get_subs_by_user.GetSubscriptionsByUserResponse:
     properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
       subscriptions:
         items:
           $ref: '#/definitions/internal_handler_get_subs_by_user.Subscription'
         type: array
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
     type: object
   internal_handler_get_subs_by_user.Subscription:
     properties:
@@ -87,12 +115,16 @@ definitions:
       user_id:
         type: string
     type: object
-  internal_handler_get_subs_by_user_subname.Request:
+  internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameRequest:
     properties:
       end_date:
         type: string
       offer_name:
         type: string
+      page:
+        type: integer
+      pageSize:
+        type: integer
       start_date:
         type: string
       user_id:
@@ -101,12 +133,20 @@ definitions:
     - offer_name
     - user_id
     type: object
-  internal_handler_get_subs_by_user_subname.Response:
+  internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameResponse:
     properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
       subscriptions:
         items:
           $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Subscription'
         type: array
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
       total_price:
         type: integer
     type: object
@@ -125,7 +165,7 @@ definitions:
       user_id:
         type: string
     type: object
-  internal_handler_post_sub_by_name.Request:
+  internal_handler_post_sub_by_name.PostSubscriptionByNameRequest:
     properties:
       end_date:
         type: string
@@ -144,7 +184,7 @@ definitions:
     - start_date
     - user_id
     type: object
-  internal_handler_post_sub_by_name.Response:
+  internal_handler_post_sub_by_name.PostSubscriptionByNameResponse:
     properties:
       end_date:
         type: string
@@ -159,7 +199,7 @@ definitions:
       user_id:
         type: string
     type: object
-  internal_handler_post_sub_by_offer_id.Request:
+  internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDRequest:
     properties:
       offer_id:
         type: string
@@ -172,7 +212,7 @@ definitions:
     - start_date
     - user_id
     type: object
-  internal_handler_post_sub_by_offer_id.Response:
+  internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDResponse:
     properties:
       end_date:
         type: string
@@ -187,7 +227,7 @@ definitions:
       user_id:
         type: string
     type: object
-  post_offer.Request:
+  post_offer.PostOfferRequest:
     properties:
       duration_months:
         minimum: 1
@@ -202,7 +242,7 @@ definitions:
     - price
     - service_name
     type: object
-  post_offer.Response:
+  post_offer.PostOfferResponse:
     properties:
       created_at:
         type: string
@@ -235,7 +275,7 @@ paths:
         name: offer
         required: true
         schema:
-          $ref: '#/definitions/delete_offer.Request'
+          $ref: '#/definitions/delete_offer.DeleteOfferRequest'
       responses:
         "202":
           description: No Content
@@ -256,13 +296,29 @@ paths:
       consumes:
       - application/json
       description: Получение списка всех офферов
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Размер страницы
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler_get_offers.Response'
+            $ref: '#/definitions/internal_handler_get_offers.GetAllOffersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
         "500":
           description: Internal Server Error
           schema:
@@ -280,16 +336,16 @@ paths:
         name: offer
         required: true
         schema:
-          $ref: '#/definitions/post_offer.Request'
+          $ref: '#/definitions/post_offer.PostOfferRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/post_offer.Response'
-        "400":
-          description: Bad Request
+            $ref: '#/definitions/post_offer.PostOfferResponse'
+        "409":
+          description: Conflict
           schema:
             type: string
         "500":
@@ -311,7 +367,7 @@ paths:
         name: subscription
         required: true
         schema:
-          $ref: '#/definitions/internal_handler_delete_sub.Request'
+          $ref: '#/definitions/internal_handler_delete_sub.DeleteSubscriptionRequest'
       responses:
         "202":
           description: No Content
@@ -332,13 +388,25 @@ paths:
       consumes:
       - application/json
       description: Получение списка всех подписок
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Размер страницы
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler_get_subs.Response'
+            $ref: '#/definitions/internal_handler_get_subs.GetAllSubscriptionsResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -357,14 +425,14 @@ paths:
         name: subscription
         required: true
         schema:
-          $ref: '#/definitions/internal_handler_post_sub_by_name.Request'
+          $ref: '#/definitions/internal_handler_post_sub_by_name.PostSubscriptionByNameRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler_post_sub_by_name.Response'
+            $ref: '#/definitions/internal_handler_post_sub_by_name.PostSubscriptionByNameResponse'
         "400":
           description: Bad Request
           schema:
@@ -388,14 +456,14 @@ paths:
         name: subscription
         required: true
         schema:
-          $ref: '#/definitions/internal_handler_post_sub_by_offer_id.Request'
+          $ref: '#/definitions/internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_handler_post_sub_by_offer_id.Response'
+            $ref: '#/definitions/internal_handler_post_sub_by_offer_id.PostSubscriptionByOfferIDResponse'
         "400":
           description: Bad Request
           schema:
@@ -408,7 +476,7 @@ paths:
       tags:
       - subscriptions
   /subscriptions/by-user:
-    post:
+    get:
       consumes:
       - application/json
       description: Получение списка подписок для указанного пользователя
@@ -418,14 +486,25 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/internal_handler_get_subs_by_user.Request'
+          $ref: '#/definitions/internal_handler_get_subs_by_user.GetSubscriptionsByUserRequest'
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Размер страницы
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler_get_subs_by_user.Response'
+            $ref: '#/definitions/internal_handler_get_subs_by_user.GetSubscriptionsByUserResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -434,7 +513,7 @@ paths:
       tags:
       - subscriptions
   /subscriptions/by-user-and-subname:
-    post:
+    get:
       consumes:
       - application/json
       description: Получение списка подписок для указанного пользователя и названия
@@ -445,14 +524,25 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Request'
+          $ref: '#/definitions/internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameRequest'
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Размер страницы
+        in: query
+        maximum: 100
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handler_get_subs_by_user_subname.Response'
+            $ref: '#/definitions/internal_handler_get_subs_by_user_subname.GetSubsByUserAndServiceNameResponse'
         "400":
           description: Bad Request
           schema:
